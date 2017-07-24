@@ -221,17 +221,16 @@ public class GitbookToPandoc
 			big_file.append("\n");
 			File markdown = new File(filename);
 			superscriptSubscript(markdown);
+			String latex_filename = markdown.getAbsolutePath().replaceAll(".md", ".tex");
 			String[] command = new String[] { s_pandocPath, "-o",
-					markdown.getAbsolutePath().replaceAll(".md", ".tex"),
+					latex_filename,
 					markdown.getAbsolutePath() };
-			for (String param : command) 
-			{
-				System.out.print(param + " ");
-			}
-			System.out.println();
+			System.out.println(filename);
 			CommandRunner runner = new CommandRunner(command);
 			runner.run();
-			System.out.println(runner.getString());
+			String file_contents = FileHelper.readToString(new File(latex_filename));
+			file_contents = promoteTitles(file_contents);
+			FileHelper.writeFromString(new File(latex_filename), file_contents);
 		}
 		// Call pandoc one last time with the big file to get the headers
 		writeHeaders(big_file);
@@ -285,6 +284,20 @@ public class GitbookToPandoc
 			}
 		}
 	}
+	
+	/**
+	 * Moves all section titles one level in the hierarchy, so that
+	 * level 1 headers become chapters instead of sections.
+	 * @param contents The contents of a LaTeX file
+	 * @return The contents with the upgraded titles
+	 */
+	protected static String promoteTitles(String contents)
+	{
+		contents = contents.replaceAll("\\\\section\\{", "\\\\chapter{");
+		contents = contents.replaceAll("\\\\subsection\\{", "\\\\section{");
+		contents = contents.replaceAll("\\\\subsubsection\\{", "\\\\subsection{");
+		return contents;
+	}
 
 	/**
 	 * Output the book.tex file that references each of the converted markdown
@@ -319,10 +332,9 @@ public class GitbookToPandoc
 	/**
 	 * Now gitbook demands that even subchapters are titled using #Title (H1),
 	 * hence if we convert naively using pandoc, each subchapter will become
-	 * \section, which is screwed up. So we have to push each section in the
-	 * subchapters down by one. We do that by replacing section{ with
-	 * subsection{
-	 * 
+	 * <tt>\section</tt>, which is screwed up. So we have to push each section in the
+	 * subchapters down by one. We do that by replacing <tt>section{</tt> with
+	 * <tt>subsection{</tt>
 	 * @param converted
 	 * @throws IOException
 	 */
