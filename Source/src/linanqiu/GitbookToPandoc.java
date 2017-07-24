@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,6 +72,21 @@ public class GitbookToPandoc
 	 * The name of the header LaTeX file
 	 */
 	public static final String s_headerFilename = "header.tex";
+	
+	/**
+	 * The name of the big Markdown file
+	 */
+	public static final String s_bigFilenameMarkdown = "all.temp.md";
+	
+	/**
+	 * The name of the big LaTeX file
+	 */
+	public static final String s_bigFilenameLatex = "all.temp.tex";
+	
+	/**
+	 * The name of the generated header file with all Pandoc declarations
+	 */
+	public static final String s_pandocIncludeFilename = "pandoc.inc.tex";
 
 	private String in_directory;
 	private String out_directory;
@@ -198,8 +214,11 @@ public class GitbookToPandoc
 	 */
 	private void markdownToLatex() throws IOException
 	{
+		StringBuilder big_file = new StringBuilder();
 		for (String filename : index.keySet()) 
 		{
+			big_file.append(FileHelper.readToString(new File(filename)));
+			big_file.append("\n");
 			File markdown = new File(filename);
 			superscriptSubscript(markdown);
 			String[] command = new String[] { s_pandocPath, "-o",
@@ -214,6 +233,36 @@ public class GitbookToPandoc
 			runner.run();
 			System.out.println(runner.getString());
 		}
+		// Call pandoc one last time with the big file to get the headers
+		writeHeaders(big_file);
+	}
+	
+	protected void writeHeaders(StringBuilder big_file_contents) throws IOException
+	{
+		FileWriter fw = new FileWriter(new File(out_directory + s_bigFilenameMarkdown));
+		fw.write(big_file_contents.toString());
+		fw.close();
+		CommandRunner pandoc_runner = new CommandRunner(new String[]{s_pandocPath, "-o", out_directory + s_bigFilenameLatex, "--standalone", out_directory + s_bigFilenameMarkdown});
+		pandoc_runner.run();
+		Scanner scan = new Scanner(new File(out_directory + s_bigFilenameLatex));
+		StringBuilder out = new StringBuilder();
+		while (scan.hasNextLine())
+		{
+			String line = scan.nextLine();
+			if (line.contains("documentclass"))
+			{
+				continue;
+			}
+			if (line.contains("\\begin{document}"))
+			{
+				break;
+			}
+			out.append(line).append("\n");
+		}
+		scan.close();
+		fw = new FileWriter(new File(out_directory + s_pandocIncludeFilename));
+		fw.write(out.toString());
+		fw.close();
 	}
 
 	/**
