@@ -3,11 +3,6 @@ gitbook-pandoc
 
 Converts Gitbook directory to LaTeX using Pandoc
 
-## Dependencies
-
-- Java 1.7
-- Apache Commons FileUtils
-
 ## Quick Start
 
 Download the release and `header.tex`, and place them in the same folder. 

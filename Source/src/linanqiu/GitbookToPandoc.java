@@ -230,6 +230,7 @@ public class GitbookToPandoc
 			runner.run();
 			String file_contents = FileHelper.readToString(new File(latex_filename));
 			file_contents = promoteTitles(file_contents);
+			file_contents = flattenImagePaths(file_contents);
 			FileHelper.writeFromString(new File(latex_filename), file_contents);
 		}
 		// Call pandoc one last time with the big file to get the headers
@@ -296,6 +297,18 @@ public class GitbookToPandoc
 		contents = contents.replaceAll("\\\\section\\{", "\\\\chapter{");
 		contents = contents.replaceAll("\\\\subsection\\{", "\\\\section{");
 		contents = contents.replaceAll("\\\\subsubsection\\{", "\\\\subsection{");
+		return contents;
+	}
+	
+	/**
+	 * Moves all section titles one level in the hierarchy, so that
+	 * level 1 headers become chapters instead of sections.
+	 * @param contents The contents of a LaTeX file
+	 * @return The contents with the upgraded titles
+	 */
+	protected static String flattenImagePaths(String contents)
+	{
+		contents = contents.replaceAll("\\\\includegraphics\\{\\.\\./", "\\\\includegraphics{");
 		return contents;
 	}
 
