@@ -57,3 +57,7 @@ jacoco.exec
 
 # PDT-specific
 **/.buildpath
+
+# Temp folders for testing
+Source/in
+Source/out
