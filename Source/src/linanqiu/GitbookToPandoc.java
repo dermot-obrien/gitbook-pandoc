@@ -16,6 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+package linanqiu;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,9 +33,8 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
+import ca.uqac.lif.labpal.FileHelper;
 
-package linanqiu;
 
 /**
  * Takes a Gitbook directory and a output directory, and converts all markdowns
@@ -80,13 +81,7 @@ public class GitbookToPandoc {
 		index = new LinkedHashMap<File, Integer>();
 
 		// read in the header file
-		try {
-			header = FileUtils
-					.readFileToString(new File("header.tex"), "ASCII");
-		} catch (IOException e) {
-			System.out.println("Missing header.tex");
-			e.printStackTrace();
-		}
+		header = FileHelper.readToString(new File("header.tex"));
 
 		// copy the source to destination
 		copyFolder(new File(in_directory), new File(out_directory));
@@ -257,7 +252,7 @@ public class GitbookToPandoc {
 	 * @throws IOException
 	 */
 	private void shift(File converted) throws IOException {
-		String file = FileUtils.readFileToString(converted, "ASCII");
+		String file = FileHelper.readToString(converted);
 		file = file.replaceAll("section\\{", "subsection\\{");
 		FileWriter writer = new FileWriter(converted);
 		writer.write(file);
@@ -274,7 +269,7 @@ public class GitbookToPandoc {
 	 * @throws IOException
 	 */
 	private void superscriptSubscript(File markdown) throws IOException {
-		String file = FileUtils.readFileToString(markdown, "ASCII");
+		String file = FileHelper.readToString(markdown);
 		file = file.replaceAll("<sub>", "~");
 		file = file.replaceAll("</sub>", "~");
 		file = file.replaceAll("<sup>", "^");
