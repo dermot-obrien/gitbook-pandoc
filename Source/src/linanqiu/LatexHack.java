@@ -8,8 +8,9 @@ public interface LatexHack
 {
 	/**
 	 * Takes the contents of a LaTeX file and modifies it in some way
+	 * @param file_contents The name of the file being modified
 	 * @param file_contents The contents of the file
 	 * @return The contents of the modified file
 	 */
-	public String hack(String file_contents);
+	public String hack(String filename, String file_contents);
 }

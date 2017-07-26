@@ -13,7 +13,7 @@ public class FlattenImageLinks implements LatexHack
 	}
 
 	@Override
-	public String hack(String contents)
+	public String hack(String filename, String contents)
 	{
 		contents = contents.replaceAll("\\\\includegraphics\\{\\.\\./", "\\\\includegraphics{");
 		return contents;

@@ -19,6 +19,7 @@
 package linanqiu;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -118,6 +119,7 @@ public class GitbookToPandoc
 		m_latexHacks = new LinkedList<LatexHack>();
 		m_latexHacks.add(PromoteTitles.instance);
 		m_latexHacks.add(FlattenImageLinks.instance);
+		m_latexHacks.add(new InlineRegexReplace());
 	}
 	
 	/**
@@ -248,7 +250,7 @@ public class GitbookToPandoc
 			String file_contents = FileHelper.readToString(new File(latex_filename));
 			for (LatexHack hack : m_latexHacks)
 			{
-				file_contents = hack.hack(file_contents);
+				file_contents = hack.hack(filename, file_contents);
 			}
 			FileHelper.writeFromString(new File(latex_filename), file_contents);
 		}
@@ -396,6 +398,22 @@ public class GitbookToPandoc
 		String in_directory = addSlash(map.getOptionValue("source"));
 		String out_directory = addSlash(map.getOptionValue("dest"));
 		GitbookToPandoc gtp = new GitbookToPandoc(in_directory, out_directory);
+		if (map.hasOption("replace-from"))
+		{
+			String filename = map.getOptionValue("replace-from");
+			try
+			{
+				Scanner sc = new Scanner(new File(filename));
+				gtp.addLatexHack(new RegexReplace(sc));
+				sc.close();
+				System.out.println("Using replacements from " + filename);
+			}
+			catch (FileNotFoundException e) 
+			{
+				System.err.println("Replacement file " + filename + " not found");
+				System.exit(2);
+			}
+		}
 		try
 		{
 			gtp.run();
@@ -430,6 +448,7 @@ public class GitbookToPandoc
 		CliParser parser = new CliParser();
 		parser.addArgument(new Argument().withLongName("source").withShortName("s").withArgument("folder").withDescription("Folder containing the source files"));
 		parser.addArgument(new Argument().withLongName("dest").withShortName("d").withArgument("folder").withDescription("Folder where the LaTeX files will be copied"));
+		parser.addArgument(new Argument().withLongName("replace-from").withShortName("r").withArgument("file").withDescription("Apply regex replacements taken from file"));
 		return parser;
 	}
 	

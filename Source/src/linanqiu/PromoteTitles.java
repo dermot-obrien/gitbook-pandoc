@@ -14,7 +14,7 @@ public class PromoteTitles implements LatexHack
 	}
 
 	@Override
-	public String hack(String contents)
+	public String hack(String filename, String contents)
 	{
 		contents = contents.replaceAll("\\\\section\\{", "\\\\chapter{");
 		contents = contents.replaceAll("\\\\subsection\\{", "\\\\section{");
