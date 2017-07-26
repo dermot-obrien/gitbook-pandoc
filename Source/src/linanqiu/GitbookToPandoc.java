@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -95,6 +97,8 @@ public class GitbookToPandoc
 	private LinkedHashMap<String,Integer> index;
 
 	private File summary;
+	
+	protected List<LatexHack> m_latexHacks;
 
 	/**
 	 * The class that does most of the grunt work
@@ -108,8 +112,21 @@ public class GitbookToPandoc
 	 */
 	public GitbookToPandoc(String in_directory, String out_directory)
 	{
+		super();
 		this.in_directory = in_directory;
 		this.out_directory = out_directory;
+		m_latexHacks = new LinkedList<LatexHack>();
+		m_latexHacks.add(PromoteTitles.instance);
+		m_latexHacks.add(FlattenImageLinks.instance);
+	}
+	
+	/**
+	 * Adds a LaTeX hack to the list of post-processing objects
+	 * @param hack The hack
+	 */
+	public void addLatexHack(LatexHack hack)
+	{
+		m_latexHacks.add(hack);
 	}
 	
 	public void run() throws GitbookRuntimeException
@@ -229,8 +246,10 @@ public class GitbookToPandoc
 			CommandRunner runner = new CommandRunner(command);
 			runner.run();
 			String file_contents = FileHelper.readToString(new File(latex_filename));
-			file_contents = promoteTitles(file_contents);
-			file_contents = flattenImagePaths(file_contents);
+			for (LatexHack hack : m_latexHacks)
+			{
+				file_contents = hack.hack(file_contents);
+			}
 			FileHelper.writeFromString(new File(latex_filename), file_contents);
 		}
 		// Call pandoc one last time with the big file to get the headers
@@ -284,32 +303,6 @@ public class GitbookToPandoc
 				index.put(file.getAbsolutePath(), CHAPTER);
 			}
 		}
-	}
-	
-	/**
-	 * Moves all section titles one level in the hierarchy, so that
-	 * level 1 headers become chapters instead of sections.
-	 * @param contents The contents of a LaTeX file
-	 * @return The contents with the upgraded titles
-	 */
-	protected static String promoteTitles(String contents)
-	{
-		contents = contents.replaceAll("\\\\section\\{", "\\\\chapter{");
-		contents = contents.replaceAll("\\\\subsection\\{", "\\\\section{");
-		contents = contents.replaceAll("\\\\subsubsection\\{", "\\\\subsection{");
-		return contents;
-	}
-	
-	/**
-	 * Moves all section titles one level in the hierarchy, so that
-	 * level 1 headers become chapters instead of sections.
-	 * @param contents The contents of a LaTeX file
-	 * @return The contents with the upgraded titles
-	 */
-	protected static String flattenImagePaths(String contents)
-	{
-		contents = contents.replaceAll("\\\\includegraphics\\{\\.\\./", "\\\\includegraphics{");
-		return contents;
 	}
 
 	/**
