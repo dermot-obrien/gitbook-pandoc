@@ -74,7 +74,7 @@ public class GitbookToPandoc
 	/**
 	 * The name of the header LaTeX file
 	 */
-	public static final String s_headerFilename = "header.tex";
+	public static final String s_headerFilename = "body.tex";
 	
 	/**
 	 * The name of the big Markdown file
@@ -93,9 +93,8 @@ public class GitbookToPandoc
 
 	private String in_directory;
 	private String out_directory;
-	private String header;
-
 	private LinkedHashMap<String,Integer> index;
+	private String m_outPrefix = "";
 
 	private File summary;
 	
@@ -111,11 +110,12 @@ public class GitbookToPandoc
 	 *            the output directory where all contents of in_directory will
 	 *            be copied to, then converted, then new book.tex created
 	 */
-	public GitbookToPandoc(String in_directory, String out_directory)
+	public GitbookToPandoc(String in_directory, String out_directory, String out_prefix)
 	{
 		super();
 		this.in_directory = in_directory;
-		this.out_directory = out_directory;
+		this.out_directory = addSlash(out_directory + out_prefix);
+		m_outPrefix = out_prefix;
 		m_latexHacks = new LinkedList<LatexHack>();
 		m_latexHacks.add(PromoteTitles.instance);
 		m_latexHacks.add(FlattenImageLinks.instance);
@@ -134,14 +134,6 @@ public class GitbookToPandoc
 	public void run() throws GitbookRuntimeException
 	{
 		index = new LinkedHashMap<String,Integer>();
-
-		// read in the header file
-		File header_f = new File(s_headerFilename);
-		if (!header_f.exists())
-		{
-			throw new GitbookRuntimeException.NoHeaderFileException();
-		}
-		header = FileHelper.readToString(header_f);
 		// copy the source to destination
 		try 
 		{
@@ -159,7 +151,7 @@ public class GitbookToPandoc
 		{
 			// add in the extra README.md from the gitbook folder itself (usually
 			// serves as introduction or foreword or whatever
-			buildForeword();
+			//buildForeword();
 
 			// indexes all the markdown files based on the summary.md
 			buildIndex();
@@ -200,7 +192,7 @@ public class GitbookToPandoc
 	 * 
 	 * @throws IOException
 	 */
-	private void buildIndex() throws IOException 
+	protected void buildIndex() throws IOException 
 	{
 		String summaryString = FileHelper.readToString(summary);
 		Pattern pattern = Pattern.compile("[(](.*)[)]");
@@ -236,7 +228,13 @@ public class GitbookToPandoc
 		StringBuilder big_file = new StringBuilder();
 		for (String filename : index.keySet()) 
 		{
-			big_file.append(FileHelper.readToString(new File(filename)));
+			File f = new File(filename);
+			if (!f.exists())
+			{
+				System.err.println("File " + filename + " not found");
+				continue;
+			}
+			big_file.append(FileHelper.readToString(f));
 			big_file.append("\n");
 			File markdown = new File(filename);
 			superscriptSubscript(markdown);
@@ -294,7 +292,7 @@ public class GitbookToPandoc
 	 * 
 	 * @throws IOException
 	 */
-	private void buildForeword() throws IOException 
+	protected void buildForeword() throws IOException 
 	{
 		File out_dir = new File(out_directory);
 		File[] listOfFiles = out_dir.listFiles();
@@ -315,11 +313,19 @@ public class GitbookToPandoc
 	 */
 	private void outputLatex() throws IOException 
 	{
-		File latex = new File(out_directory + "book.tex");
+		File latex = new File(out_directory + s_headerFilename);
 		FileWriter writer = new FileWriter(latex);
-		String includes = "";
+		StringBuilder includes = new StringBuilder();
+		StringBuilder graphicspath = new StringBuilder();
+		graphicspath.append("\\graphicspath{");
 		for (String filename : index.keySet()) 
 		{
+			if (filename.contains("README.md"))
+			{
+				String n_filename = filename.replaceAll("\\\\", "/");
+				int pos = n_filename.indexOf(out_directory);
+				graphicspath.append("{").append(n_filename.substring(pos + out_directory.length()).replace("/README.md", "")).append("}");
+			}
 			File markdown = new File(filename);
 			File converted = new File(markdown.getAbsolutePath().replaceAll(".md", ".tex"));
 			if (index.get(filename) == SUBCHAPTER) 
@@ -330,10 +336,11 @@ public class GitbookToPandoc
 			String path = converted.getAbsolutePath();
 			String base = new File(out_directory).getAbsolutePath();
 			String relative = new File(base).toURI().relativize(new File(path).toURI()).getPath();
-			includes = includes + "\\\\include{" + relative.replaceAll(".tex", "") + "}" + "\n";
+			includes.append("\\subimport{" + addSlash(m_outPrefix) + "}{" + relative.replaceAll(".tex", "") + "}" + "\n");
 		}
-		header = header.replaceAll("<CONTENT>", includes);
-		writer.write(header);
+		graphicspath.append("}\n");
+		writer.write(graphicspath.toString());
+		writer.write(includes.toString());
 		writer.close();
 	}
 
@@ -397,7 +404,12 @@ public class GitbookToPandoc
 		}
 		String in_directory = addSlash(map.getOptionValue("source"));
 		String out_directory = addSlash(map.getOptionValue("dest"));
-		GitbookToPandoc gtp = new GitbookToPandoc(in_directory, out_directory);
+		String out_prefix = "";
+		if (map.hasOption("prefix"))
+		{
+			out_prefix = map.getOptionValue("prefix");
+		}
+		GitbookToPandoc gtp = new GitbookToPandoc(in_directory, out_directory, out_prefix);
 		if (map.hasOption("replace-from"))
 		{
 			String filename = map.getOptionValue("replace-from");
@@ -448,6 +460,7 @@ public class GitbookToPandoc
 		CliParser parser = new CliParser();
 		parser.addArgument(new Argument().withLongName("source").withShortName("s").withArgument("folder").withDescription("Folder containing the source files"));
 		parser.addArgument(new Argument().withLongName("dest").withShortName("d").withArgument("folder").withDescription("Folder where the LaTeX files will be copied"));
+		parser.addArgument(new Argument().withLongName("prefix").withShortName("p").withArgument("prefix").withDescription("Folder where the LaTeX files will be copied"));
 		parser.addArgument(new Argument().withLongName("replace-from").withShortName("r").withArgument("file").withDescription("Apply regex replacements taken from file"));
 		return parser;
 	}
