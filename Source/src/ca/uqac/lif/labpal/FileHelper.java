@@ -1,6 +1,6 @@
 /*
   LabPal, a versatile environment for running experiments on a computer
-  Copyright (C) 2015-2017 Sylvain Hallé
+  Copyright (C) 2015-2017 Sylvain HallÃ©
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ import java.util.jar.JarFile;
 
 /**
  * A number of helpful utilities to read, write and manage files
- * @author Sylvain Hallé
+ * @author Sylvain HallÃ©
  */
 public class FileHelper
 {
