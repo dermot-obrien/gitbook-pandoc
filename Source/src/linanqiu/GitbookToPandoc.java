@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -98,7 +99,15 @@ public class GitbookToPandoc
 
 	private File summary;
 	
+	/**
+	 * A list of LaTeX hacks
+	 */
 	protected List<LatexHack> m_latexHacks;
+	
+	/**
+	 * A list of Markdown hacks
+	 */
+	protected List<MarkdownHack> m_markdownHacks;
 
 	/**
 	 * The class that does most of the grunt work
@@ -119,7 +128,16 @@ public class GitbookToPandoc
 		m_latexHacks = new LinkedList<LatexHack>();
 		m_latexHacks.add(PromoteTitles.instance);
 		m_latexHacks.add(FlattenImageLinks.instance);
+		m_latexHacks.add(new RepositionImageUrls(out_directory, m_outPrefix));
 		m_latexHacks.add(new InlineRegexReplace());
+		m_latexHacks.add(new InlineRegexReplace());
+		m_markdownHacks = new LinkedList<MarkdownHack>();
+		m_markdownHacks.add(IndexReplace.instance);
+		List<String[]> replacements = new ArrayList<String[]>();
+		replacements.add(new String[]{".*", "GPGP\\index", "\\index"});
+		RegexReplace rr = new RegexReplace(replacements);
+		rr.useRegex(false);
+		m_latexHacks.add(rr);
 	}
 	
 	/**
@@ -226,8 +244,12 @@ public class GitbookToPandoc
 	private void markdownToLatex() throws IOException
 	{
 		StringBuilder big_file = new StringBuilder();
+		int total_files = index.size();
+		int cur_file = 0;
+		System.out.println();
 		for (String filename : index.keySet()) 
 		{
+			cur_file++;
 			File f = new File(filename);
 			if (!f.exists())
 			{
@@ -238,11 +260,15 @@ public class GitbookToPandoc
 			big_file.append("\n");
 			File markdown = new File(filename);
 			superscriptSubscript(markdown);
+			for (MarkdownHack h : m_markdownHacks)
+			{
+				h.hack(markdown);
+			}
 			String latex_filename = markdown.getAbsolutePath().replaceAll(".md", ".tex");
 			String[] command = new String[] { s_pandocPath, "-o",
 					latex_filename,
 					markdown.getAbsolutePath() };
-			System.out.println(filename);
+			System.out.print("\r " + cur_file + "/" + total_files + "  " + filename + "    ");
 			CommandRunner runner = new CommandRunner(command);
 			runner.run();
 			String file_contents = FileHelper.readToString(new File(latex_filename));
@@ -252,6 +278,7 @@ public class GitbookToPandoc
 			}
 			FileHelper.writeFromString(new File(latex_filename), file_contents);
 		}
+		System.out.println();
 		// Call pandoc one last time with the big file to get the headers
 		writeHeaders(big_file);
 	}
@@ -282,6 +309,7 @@ public class GitbookToPandoc
 		fw = new FileWriter(new File(out_directory + s_pandocIncludeFilename));
 		fw.write(out.toString());
 		fw.close();
+		System.out.println("Wrote headers to " + out_directory + s_pandocIncludeFilename);
 	}
 
 	/**
@@ -402,6 +430,7 @@ public class GitbookToPandoc
 			parser.printHelp("gitbook-pandoc - Converts Gitbook directory to LaTeX using Pandoc\nUsage: java -jar gitbook-pandoc.jar [options]\n\nOptions:", System.err);
 			System.exit(1);
 		}
+		System.out.println("gitbook-pandoc - Converts GitBook directory to LaTeX using Pandoc\n(C) 2017 Sylvain Hallé and linanqiu\n");
 		String in_directory = addSlash(map.getOptionValue("source"));
 		String out_directory = addSlash(map.getOptionValue("dest"));
 		String out_prefix = "";

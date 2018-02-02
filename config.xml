@@ -37,6 +37,10 @@
   <bindir>Source/bin</bindir>
   <depdir>Source/dep</depdir>
   <docdir>Source/doc</docdir>
+
+  <jar>
+    <filename>gitbook-pandoc.jar</filename>
+  </jar>
   
   <!--
     Write JAR dependencies here.

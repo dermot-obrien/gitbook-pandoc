@@ -3,6 +3,7 @@ package linanqiu;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 /**
  * Performs a batch of search-replace based on regexes.
@@ -11,10 +12,17 @@ public class RegexReplace implements LatexHack
 {
 	protected List<String[]> m_replacements;
 	
+	protected boolean m_useRegex = true;
+	
 	public RegexReplace(List<String[]> replacements)
 	{
 		super();
 		m_replacements = replacements;
+	}
+	
+	public void useRegex(boolean b)
+	{
+		m_useRegex = b;
 	}
 	
 	public RegexReplace(Scanner scanner)
@@ -50,7 +58,14 @@ public class RegexReplace implements LatexHack
 		{
 			if (!filename.matches(entry[0]))
 				continue;
-			contents = contents.replaceAll(entry[1], entry[2]);
+			if (m_useRegex)
+			{
+				contents = contents.replaceAll(Pattern.quote(entry[1]), Pattern.quote(entry[2]));
+			}
+			else
+			{
+				contents = contents.replace(entry[1], entry[2]);
+			}
 		}
 		return contents;
 	}
