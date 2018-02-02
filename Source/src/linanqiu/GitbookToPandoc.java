@@ -20,8 +20,10 @@ package linanqiu;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -406,9 +408,9 @@ public class GitbookToPandoc
 		file = file.replaceAll("</sub>", "~");
 		file = file.replaceAll("<sup>", "^");
 		file = file.replaceAll("</sup>", "^");
-		FileWriter writer = new FileWriter(markdown);
-		writer.write(file);
-		writer.close();
+		PrintStream ps = new PrintStream(new FileOutputStream(markdown));
+		ps.print(file);
+		ps.close();
 	}
 
 	/**
@@ -473,6 +475,10 @@ public class GitbookToPandoc
 	 */
 	protected static String addSlash(String s)
 	{
+		if (s.isEmpty())
+		{
+			return "/";
+		}
 		if (s.charAt(s.length() - 1) != '/') 
 		{
 			s = s + '/';

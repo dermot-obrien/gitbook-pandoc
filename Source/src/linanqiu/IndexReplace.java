@@ -31,7 +31,7 @@ public class IndexReplace implements MarkdownHack
 			scan = new Scanner(f);
 			while (scan.hasNextLine())
 			{
-				String line = scan.nextLine().trim();
+				String line = scan.nextLine();
 				Matcher mat = m_pattern.matcher(line);
 				while (mat.find())
 				{
