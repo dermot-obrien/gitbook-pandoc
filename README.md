@@ -39,3 +39,7 @@ $ java -jar GitbookToPandoc.jar ./GitbookFolder ./TargetFolder
 
 - Make sure that `header.tex` exists
 - Right now, it only converts `.md` to `.tex`. Any other extensions or formats are unsupported. Come on man I only have one day.
+
+## Command-line options
+
+The `--incremental` option only processes files whose source is newer than the destination.

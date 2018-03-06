@@ -40,6 +40,7 @@
 
   <jar>
     <filename>gitbook-pandoc.jar</filename>
+    <withdoc>false</withdoc>
   </jar>
   
   <!--

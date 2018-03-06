@@ -93,6 +93,12 @@ public class GitbookToPandoc
 	 * The name of the generated header file with all Pandoc declarations
 	 */
 	public static final String s_pandocIncludeFilename = "pandoc.inc.tex";
+	
+	/**
+	 * Whether the conversion process is incremental. If so, the program
+	 * only processes the files whose source is newer than the destination
+	 */
+	private boolean m_incremental = false;
 
 	private String in_directory;
 	private String out_directory;
@@ -157,7 +163,7 @@ public class GitbookToPandoc
 		// copy the source to destination
 		try 
 		{
-			FileHelper.copyFolder(new File(in_directory), new File(out_directory));
+			FileHelper.copyFolder(new File(in_directory), new File(out_directory), m_incremental);
 		}
 		catch (IOException e) 
 		{
@@ -245,6 +251,7 @@ public class GitbookToPandoc
 	 */
 	private void markdownToLatex() throws IOException
 	{
+		int num_skip = 0;
 		StringBuilder big_file = new StringBuilder();
 		int total_files = index.size();
 		int cur_file = 0;
@@ -258,19 +265,35 @@ public class GitbookToPandoc
 				System.err.println("File " + filename + " not found");
 				continue;
 			}
-			big_file.append(FileHelper.readToString(f));
-			big_file.append("\n");
+			if (!m_incremental)
+			{
+				big_file.append(FileHelper.readToString(f));
+				big_file.append("\n");				
+			}
 			File markdown = new File(filename);
+			long markdown_date = markdown.lastModified();
+			String latex_filename = markdown.getAbsolutePath().replaceAll(".md", ".tex");
+			File f_latex = new File(latex_filename);
+			long latex_date = f_latex.lastModified();
+			if (m_incremental)
+			{
+				if (f_latex.exists() && markdown_date < latex_date)
+				{
+					// No change, skip this file
+					System.out.println("\u001b[2K\r" + cur_file + "/" + total_files + " SKIP " + filename + "    ");
+					num_skip++;
+					continue;
+				}
+			}
 			superscriptSubscript(markdown);
 			for (MarkdownHack h : m_markdownHacks)
 			{
 				h.hack(markdown);
 			}
-			String latex_filename = markdown.getAbsolutePath().replaceAll(".md", ".tex");
 			String[] command = new String[] { s_pandocPath, "-o",
 					latex_filename,
 					markdown.getAbsolutePath() };
-			System.out.print("\r " + cur_file + "/" + total_files + "  " + filename + "    ");
+			System.out.print("\u001b[2K\r" + cur_file + "/" + total_files + "  " + filename + "    ");
 			CommandRunner runner = new CommandRunner(command);
 			runner.run();
 			String file_contents = FileHelper.readToString(new File(latex_filename));
@@ -282,7 +305,12 @@ public class GitbookToPandoc
 		}
 		System.out.println();
 		// Call pandoc one last time with the big file to get the headers
-		writeHeaders(big_file);
+		if (!m_incremental)
+		{
+			//...except if we did an incremental conversion
+			writeHeaders(big_file);
+		}
+		System.out.println("Skipped " + num_skip + " files");
 	}
 	
 	protected void writeHeaders(StringBuilder big_file_contents) throws IOException
@@ -441,6 +469,10 @@ public class GitbookToPandoc
 			out_prefix = map.getOptionValue("prefix");
 		}
 		GitbookToPandoc gtp = new GitbookToPandoc(in_directory, out_directory, out_prefix);
+		if (map.hasOption("incremental"))
+		{
+			gtp.m_incremental = true;
+		}
 		if (map.hasOption("replace-from"))
 		{
 			String filename = map.getOptionValue("replace-from");
@@ -497,6 +529,7 @@ public class GitbookToPandoc
 		parser.addArgument(new Argument().withLongName("dest").withShortName("d").withArgument("folder").withDescription("Folder where the LaTeX files will be copied"));
 		parser.addArgument(new Argument().withLongName("prefix").withShortName("p").withArgument("prefix").withDescription("Folder where the LaTeX files will be copied"));
 		parser.addArgument(new Argument().withLongName("replace-from").withShortName("r").withArgument("file").withDescription("Apply regex replacements taken from file"));
+		parser.addArgument(new Argument().withLongName("incremental").withShortName("i").withDescription("Only process files that have been changed"));
 		return parser;
 	}
 	

@@ -547,9 +547,10 @@ public class FileHelper
 	 *            source directory
 	 * @param dest
 	 *            destination directory
+	 * @param incremental Set to true to only overwrite newer files 
 	 * @throws IOException
 	 */
-	public static void copyFolder(File src, File dest) throws IOException 
+	public static void copyFolder(File src, File dest, boolean incremental) throws IOException 
 	{
 		if (src.isDirectory()) 
 		{
@@ -563,16 +564,29 @@ public class FileHelper
 			for (String file : files)
 			{
 				// construct the src and dest file structure
+				if (incremental && dest.exists() && src.lastModified() < dest.lastModified())
+				{
+					// Skip this file
+					System.out.println("SKIP " + src);
+					return;
+				}
 				File srcFile = new File(src, file);
 				File destFile = new File(dest, file);
 				// recursive copy
-				copyFolder(srcFile, destFile);
+				copyFolder(srcFile, destFile, incremental);
 			}
 		} 
 		else
 		{
 			// if file, then copy it
 			// Use bytes stream to support all file types
+			if (incremental && dest.exists() && src.lastModified() < dest.lastModified())
+			{
+				// Skip this file
+				System.out.println("SKIP " + src);
+				return;
+			}
+			System.out.println("COPY " + src);
 			InputStream in = new FileInputStream(src);
 			OutputStream out = new FileOutputStream(dest);
 			byte[] buffer = new byte[1024];
