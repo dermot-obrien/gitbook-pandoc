@@ -48,6 +48,11 @@ import ca.uqac.lif.labpal.FileHelper;
 public class GitbookToPandoc 
 {
 	/**
+	 * A string indicating the version number
+	 */
+	protected static final String VERSION_STRING = "0.2";
+	
+	/**
 	 * The level of chapters in the summary
 	 */
 	protected static final int CHAPTER = 1;
@@ -290,7 +295,7 @@ public class GitbookToPandoc
 			{
 				h.hack(markdown);
 			}
-			String[] command = new String[] { s_pandocPath, "-o",
+			String[] command = new String[] { s_pandocPath, "--wrap=preserve", "-o",
 					latex_filename,
 					markdown.getAbsolutePath() };
 			System.out.print("\u001b[2K\r" + cur_file + "/" + total_files + "  " + filename + "    ");
@@ -457,10 +462,10 @@ public class GitbookToPandoc
 		ArgumentMap map = parser.parse(args);
 		if (!map.hasOption("source") || !map.hasOption("dest"))
 		{
-			parser.printHelp("gitbook-pandoc - Converts Gitbook directory to LaTeX using Pandoc\nUsage: java -jar gitbook-pandoc.jar [options]\n\nOptions:", System.err);
+			parser.printHelp("gitbook-pandoc v" + VERSION_STRING + " - Converts a Gitbook directory to LaTeX using Pandoc\nUsage: java -jar gitbook-pandoc.jar [options]\n\nOptions:", System.err);
 			System.exit(1);
 		}
-		System.out.println("gitbook-pandoc - Converts GitBook directory to LaTeX using Pandoc\n(C) 2017 Sylvain Hallé and linanqiu\n");
+		System.out.println("gitbook-pandoc v" + VERSION_STRING + " - Converts a GitBook directory to LaTeX using Pandoc\n(C) 2017-2018 Sylvain Hallé and linanqiu\n");
 		String in_directory = addSlash(map.getOptionValue("source"));
 		String out_directory = addSlash(map.getOptionValue("dest"));
 		String out_prefix = "";
@@ -530,6 +535,7 @@ public class GitbookToPandoc
 		parser.addArgument(new Argument().withLongName("prefix").withShortName("p").withArgument("prefix").withDescription("Folder where the LaTeX files will be copied"));
 		parser.addArgument(new Argument().withLongName("replace-from").withShortName("r").withArgument("file").withDescription("Apply regex replacements taken from file"));
 		parser.addArgument(new Argument().withLongName("incremental").withShortName("i").withDescription("Only process files that have been changed"));
+		parser.addArgument(new Argument().withLongName("wrap").withShortName("x").withDescription("Pass to Pandoc's wrap CLI option"));
 		return parser;
 	}
 	
