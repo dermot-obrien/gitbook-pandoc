@@ -31,6 +31,21 @@ configurations.configureEach {
    resolutionStrategy.failOnVersionConflict()
 }
 
+jar {
+    manifest {
+        attributes(
+                "Main-Class": 'linanqiu.GitbookToPandoc'
+        )
+    }
+}
+
+task runWithExecJarExecutable(type: Exec) {
+    dependsOn jar
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", jar.archiveFile.get()
+}
+
 sourceSets.main.java.srcDirs += ['Source/src']
 
 test {
