@@ -1,0 +1,61 @@
+plugins {
+    id "java"
+    id "maven-publish"
+}
+
+group = 'org.dobrien'
+version = '1.0.0.rc-01'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+def log4jVersion = '2.20.0'
+
+dependencies {
+
+    implementation "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+    implementation "org.apache.logging.log4j:log4j-api:${log4jVersion}"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+
+}
+
+// Conflict resolution.
+
+configurations.configureEach {
+   // Fail eagerly on version conflict (includes transitive dependencies)
+   // e.g. multiple different versions of the same dependency (group and name are equal)
+   resolutionStrategy.failOnVersionConflict()
+}
+
+jar {
+    manifest {
+        attributes(
+                "Main-Class": 'linanqiu.GitbookToPandoc'
+        )
+    }
+}
+
+task runWithExecJarExecutable(type: Exec) {
+    dependsOn jar
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", jar.archiveFile.get()
+}
+
+sourceSets.main.java.srcDirs += ['Source/src']
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.implementation
+}
